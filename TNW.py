@@ -12,8 +12,7 @@ class TNW():
         self.loginWindow.get_id_signal.connect(self.get_id)
 
     def get_id(self, Id):
-        self.Id = Id
-        self.mainWindow = TNWMain()
+        self.mainWindow = TNWMain(Id)
 
 class TNWLogin(QWidget):
     get_id_signal = QtCore.pyqtSignal(str)
@@ -62,10 +61,11 @@ class TNWLogin(QWidget):
 
 class TNWMain(QMainWindow):
 
-    def __init__(self):
+    def __init__(self, Id):
         super().__init__()
         self.initUI()
         self.presentContact = []
+        self.Id = Id
 
     def initUI(self):
         self.addFriendBtn= QPushButton('Add friend')
@@ -206,19 +206,30 @@ class TNWMain(QMainWindow):
             self.msgAreaVbox.itemAt(i).widget().setParent(None)
 
     def add_contact(self, contact):
-        # TODO check exist
-        # TODO write to file
-        contactBtn = ContactBtn(contact)
-        contactBtn.clicked.connect(self.contact_btn_clicked)
-        count = self.contactAreaVbox.count()
-        self.contactAreaVbox.insertWidget(count - 1, contactBtn)
+        searchContact = self.search_contact_btn(contact) 
+        if searchContact == -1:
+            contactBtn = ContactBtn(contact)
+            contactBtn.clicked.connect(self.contact_btn_clicked)
+            count = self.contactAreaVbox.count()
+            self.contactAreaVbox.insertWidget(count - 1, contactBtn)
+            contactBtn.clicked.emit()
+        else:
+            self.contactAreaVbox.itemAt(searchContact).widget().clicked.emit()
+
+    def search_contact_btn(self, contact):
+        for i in range(self.contactAreaVbox.count() - 1):
+            if self.contactAreaVbox.itemAt(i).widget().contact == contact:
+                return i
+        return -1
 
     def add_friend_btn_clicked(self):
         Id, okPressed = QInputDialog.getText(self, "Add friend","Friend id:", QLineEdit.Normal, "")
         if okPressed and Id != '':
             queryResult = login.query(Id)
             regex = re.compile('(\d{1,3}\.?){4}')
-            if queryResult == 'n' or regex.match(queryResult):
+            if Id == self.Id:
+                QMessageBox.about(self, "Error", "You can't add youself!")
+            elif queryResult == 'n' or regex.match(queryResult):
                 self.add_contact([Id])
             else:
                 QMessageBox.about(self, "Error", "No such user!")
@@ -236,9 +247,13 @@ class TNWMain(QMainWindow):
         else:
             self.queryBtn.show()
 
-    def delete_btn_clicked(self):
-        # TODO delete according to contact
-        return 0
+    def delete_btn_clicked(self, contact):
+        searchContact = self.search_contact_btn(self.presentContact)
+        if searchContact != -1:
+            self.contactAreaVbox.itemAt(searchContact).widget().setParent(None)
+            self.disable_btn()
+            self.conversationLabel.setText('')
+            self.clear_msg_area()
 
     def query_btn_clicked(self):
         result = login.query(self.presentContact[0])
@@ -272,6 +287,10 @@ class ContactBtn(QPushButton):
             self.setText('Group: \n' + self.contact[0] + ' ...')
         else:
             self.setText(self.contact[0])
+
+# when exiting
+# TODO write to file
+# TODO logout
 
 if __name__ == '__main__':
 
