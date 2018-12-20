@@ -1,10 +1,12 @@
-import login
-import msg
 import re
-
+import time
 import sys
+import json
 from PyQt5.QtWidgets import *
 from PyQt5 import QtGui, QtCore
+
+import login
+import msg
 
 class TNW():
     def __init__(self):
@@ -79,6 +81,7 @@ class TNWMain(QMainWindow):
         self.msgArea = QScrollArea()
         self.msgArea.setWidgetResizable(True)
         self.msgAreaVbox = QVBoxLayout()
+        self.msgAreaVbox.addStretch()
         self.msgAreaWidget = QWidget()
         self.msgAreaWidget.setLayout(self.msgAreaVbox)
         self.msgArea.setWidget(self.msgAreaWidget)
@@ -104,18 +107,22 @@ class TNWMain(QMainWindow):
         shortcut = QShortcut(QtGui.QKeySequence("Ctrl+Return"), self)
         shortcut.activated.connect(self.send_btn_clicked) 
 
-        self.disable_btn()
+        self.disable_contact()
 
         self.conversationLabel = QLabel()
         self.conversationLabel.setText('')
         self.conversationLabel.setWordWrap(True)
 
-        self.vboxrHbox = QHBoxLayout()
-        self.vboxrHbox.addWidget(self.deleteBtn)
-        self.vboxrHbox.addWidget(self.queryBtn)
-        self.vboxrHbox.addStretch()
-        self.vboxrHbox.addWidget(self.sendFileBtn)
-        self.vboxrHbox.addWidget(self.sendBtn)
+        self.vboxrHbox1 = QHBoxLayout()
+        self.vboxrHbox1.addWidget(self.deleteBtn)
+        # self.vboxrHbox1.addStretch()
+        self.vboxrHbox1.addWidget(self.conversationLabel)
+
+        self.vboxrHbox2 = QHBoxLayout()
+        self.vboxrHbox2.addWidget(self.queryBtn)
+        self.vboxrHbox2.addStretch()
+        self.vboxrHbox2.addWidget(self.sendFileBtn)
+        self.vboxrHbox2.addWidget(self.sendBtn)
 
         self.contactArea = QScrollArea()
         self.contactArea.setWidgetResizable(True)
@@ -131,10 +138,10 @@ class TNWMain(QMainWindow):
         self.vboxl.addWidget(self.addGroupBtn)
 
         self.vboxr = QVBoxLayout()
-        self.vboxr.addWidget(self.conversationLabel)
+        self.vboxr.addLayout(self.vboxrHbox1)
         self.vboxr.addWidget(self.msgArea)
         self.vboxr.addWidget(self.textEdit)
-        self.vboxr.addLayout(self.vboxrHbox)
+        self.vboxr.addLayout(self.vboxrHbox2)
 
         self.hbox = QHBoxLayout()
         self.hbox.addLayout(self.vboxl, 0)
@@ -149,11 +156,7 @@ class TNWMain(QMainWindow):
         self.center()
         self.setWindowTitle('TNW is Not WeChat')    
 
-        for i in range(10):
-            self.show_msg('information  haha', 'text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text, text')
-
-        self.show_msg('information  haha', 'text, text, text, text, text, a long long long wordddddddddddddd', 'right')
-
+        self.receivingMsg(7070)
         self.show()
 
     def center(self):
@@ -162,47 +165,83 @@ class TNWMain(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    def disable_btn(self):
+    def receivingMsg(self, port):
+        self.server = msg.ServerThread(port, self)
+        self.server.incomingMsg.connect(self.deal_msg)
+        self.server.start()
+        print('receivingMsg')
+
+    def disable_contact(self):
         self.deleteBtn.setEnabled(False)
         self.queryBtn.setEnabled(False)
         self.sendFileBtn.setEnabled(False)
         self.sendBtn.setEnabled(False)
+        self.textEdit.setEnabled(False)
 
-    def enable_btn(self):
+    def enable_contact(self):
         self.deleteBtn.setEnabled(True)
         self.queryBtn.setEnabled(True)
         self.sendFileBtn.setEnabled(True)
         self.sendBtn.setEnabled(True)
+        self.textEdit.setEnabled(True)
 
     def read_contact_file(self):
         # TODO rt
         return 0
 
-    def show_msg(self, info, text, align='left'):
+    def deal_msg(self, data):
+        print(self.presentContact)
+        contact = sorted(set(data['source'] + data['target']))
+
+        # write file
+        with open(''.join(contact), 'w+') as msgf:
+            msgf.write(json.dumps(data))
+
+        # Check active chat.
+        if contact ==  sorted(set(self.presentContact + [self.Id])):
+            show_msg(data)
+            print('present')
+        else:
+            print('non present')
+
+    def show_msg(self, data, align='left'):
+        if data['type'] == 'TEXT':
+            timeArray = time.localtime(data['time'] / 1000)
+            info = data['source'] + ' ' + \
+                    time.strftime("%Y-%m-%d %H:%M:%S", timeArray)
+            text = data['data']
+
         msgWidget = QWidget()
         msgHbox = QHBoxLayout()
-        msgVboxR = QVBoxLayout()
+        msgVbox = QVBoxLayout()
         msgWidget.setLayout(msgHbox)
+
         msgInfoLabel = QLabel()
         msgInfoLabel.setText(info)
+        msgInfoLabel.setWordWrap(True)
+        msgVbox.addWidget(msgInfoLabel)
+
         msgTextLabel = QLabel()
         msgTextLabel.setText(text)
         msgTextLabel.setWordWrap(True)
+        msgVbox.addWidget(msgTextLabel)
+
         if align == 'right':
             msgHbox.addStretch(2)
-            msgHbox.addLayout(msgVboxR, 5)
+            msgHbox.addLayout(msgVbox, 5)
             msgInfoLabel.setAlignment(QtCore.Qt.AlignRight)
             msgTextLabel.setAlignment(QtCore.Qt.AlignRight)
         else:
-            msgHbox.addLayout(msgVboxR, 5)
+            msgHbox.addLayout(msgVbox, 5)
             msgHbox.addStretch(2)
 
-        msgVboxR.addWidget(msgInfoLabel)
-        msgVboxR.addWidget(msgTextLabel)
-        self.msgAreaVbox.addWidget(msgWidget)
+        msgInfoLabel.setStyleSheet('*{background-color:yellow;}')
+        msgTextLabel.setStyleSheet('*{background-color:yellow;}')
+        count = self.msgAreaVbox.count()
+        self.msgAreaVbox.insertWidget(count - 1, msgWidget)
 
     def clear_msg_area(self):
-        for i in reversed(range(self.msgAreaVbox.count())): 
+        for i in reversed(range(self.msgAreaVbox.count() - 1)):
             self.msgAreaVbox.itemAt(i).widget().setParent(None)
 
     def add_contact(self, contact):
@@ -218,27 +257,30 @@ class TNWMain(QMainWindow):
 
     def search_contact_btn(self, contact):
         for i in range(self.contactAreaVbox.count() - 1):
-            if self.contactAreaVbox.itemAt(i).widget().contact == contact:
+            if self.contactAreaVbox.itemAt(i).widget().contact \
+                    == contact:
                 return i
         return -1
 
     def add_friend_btn_clicked(self):
-        Id, okPressed = QInputDialog.getText(self, "Add friend","Friend id:", QLineEdit.Normal, "")
-        if okPressed and Id != '':
-            queryResult = login.query(Id)
-            regex = re.compile('(\d{1,3}\.?){4}')
+        Id, okPressed = QInputDialog.getInt(self, "Add friend","Friend id:", QLineEdit.Normal)
+        Id = str(Id)
+        if okPressed:
             if Id == self.Id:
                 QMessageBox.about(self, "Error", "You can't add youself!")
-            elif queryResult == 'n' or regex.match(queryResult):
+            elif login.checkValid(Id):
                 self.add_contact([Id])
             else:
                 QMessageBox.about(self, "Error", "No such user!")
 
     def add_group_btn_clicked(self):
-        return 0
+        dialog = TNWAddGroupWidget(self.Id, self)
+        contact = dialog.getContact()
+        if len(contact):
+            self.add_contact(sorted(contact))
 
     def contact_btn_clicked(self):
-        self.enable_btn()
+        self.enable_contact()
         self.presentContact = self.sender().contact
         self.conversationLabel.setText('chat with: ' + \
                 ' & '.join(self.presentContact))
@@ -248,10 +290,11 @@ class TNWMain(QMainWindow):
             self.queryBtn.show()
 
     def delete_btn_clicked(self, contact):
+        # TODO delete msg history file
         searchContact = self.search_contact_btn(self.presentContact)
         if searchContact != -1:
             self.contactAreaVbox.itemAt(searchContact).widget().setParent(None)
-            self.disable_btn()
+            self.disable_contact()
             self.conversationLabel.setText('')
             self.clear_msg_area()
 
@@ -288,9 +331,94 @@ class ContactBtn(QPushButton):
         else:
             self.setText(self.contact[0])
 
+class TNWAddGroupWidget(QDialog):
+    # get_id_signal = QtCore.pyqtSignal(str)
+
+    def __init__(self, Id, parent = None):
+        super().__init__(parent)
+        self.setWindowModality(QtCore.Qt.ApplicationModal)
+        self.Id = Id
+        self.contact = set([])
+        self.initUI()
+
+    def initUI(self):
+        self.label = QLabel('', self)
+        self.label.setText('Group member:')
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        self.label.setStyleSheet('*{font-size:18pt;}')
+        self.label.setWordWrap(True)
+        self.label.setFixedWidth(340)
+        self.labelScroll = QScrollArea(self)
+        self.labelScroll.setFixedSize(360, 100)
+        self.labelScroll.move(20, 40)
+        self.labelScroll.setWidget(self.label)
+
+        self.idTextLine = QLineEdit(self.Id, self)
+        self.idTextLine.setFixedSize(200, 40)
+        self.idTextLine.move(100, 150)
+        self.idTextLine.setAlignment(QtCore.Qt.AlignCenter)
+        self.idTextLine.setFocus(True)
+        self.idTextLine.setText('')
+        self.idTextLine.setStyleSheet('*{font-size:18pt;}')
+        regexp = QtCore.QRegExp('^\d{1,10}$')
+        validator = QtGui.QRegExpValidator(regexp)
+        self.idTextLine.setValidator(validator)
+
+        self.addBtn = QPushButton('Add id', self)
+        self.addBtn.setFixedSize(100, 30)
+        self.addBtn.move(25, 200)
+        self.addBtn.clicked.connect(self.addId)
+        self.startGroupBtn = QPushButton('Start Group', self)
+        self.startGroupBtn.setFixedSize(100, 30)
+        self.startGroupBtn.move(150, 200)
+        self.startGroupBtn.clicked.connect(self.startGroup)
+        self.cancelBtn = QPushButton('Cancel', self)
+        self.cancelBtn.setFixedSize(100, 30)
+        self.cancelBtn.move(275, 200)
+        self.cancelBtn.clicked.connect(self.cancel)
+
+        self.setFixedSize(400, 250)
+        self.center()
+        self.setWindowTitle('Start a group chat')    
+        self.show()
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    def addId(self):
+        Id = self.idTextLine.text()
+        if Id == self.Id:
+            QMessageBox.about(self, 'Error', 'You are inlcuded already!')
+            self.idTextLine.setText('')
+        elif login.checkValid(Id):
+            self.contact.add(Id)
+            self.idTextLine.setText('')
+            self.label.setText('Group member:\n' + ' '.join(sorted(self.contact)))
+            self.label.adjustSize()
+        else:
+            QMessageBox.about(self, 'Error', 'Invalid Id!')
+
+    def cancel(self):
+        self.contact = set([])
+        self.close()
+
+    def startGroup(self):
+        if len(self.contact) > 1:
+            self.close()
+        else:
+            QMessageBox.about(self, 'Error', 'Groups need more than 2 users(including yourself)!')
+
+    def getContact(self):
+        self.exec_()
+        return list(self.contact)
+
 # when exiting
 # TODO write to file
 # TODO logout
+# TODO function to check Id
 
 if __name__ == '__main__':
 

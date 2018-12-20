@@ -1,36 +1,42 @@
 # -*- coding: UTF-8 -*-
 import socket
+import re
 
-def login(user, pwd = 'net2018'):
+def login(Id, pwd = 'net2018'):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(('166.111.140.14', 8000))
-    data = user + '_' + pwd
+    data = Id + '_' + pwd
     s.sendall(data.encode('utf-8'))
     data = s.recv(1024).decode('utf-8')
     s.close()
     return data =='lol'
 
-def query(user):
+def query(Id):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(('166.111.140.14', 8000))
-    data = 'q' + user
+    data = 'q' + Id
     s.sendall(data.encode('utf-8'))
     data = s.recv(1024).decode('utf-8')
     s.close()
     return data
 
-def logout(user):
+def logout(Id):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(('166.111.140.14', 8000))
-    data = 'logout' + user
+    data = 'logout' + Id
     s.sendall(data.encode('utf-8'))
     data = s.recv(1024).decode('utf-8')
     s.close()
     return data == 'loo'
 
-if __name__ == '__main__':
-    id = '2016011400'
+def checkValid(Id):
+    regex = re.compile('^(\d{1,3}\.?){4}|n$')
+    return len(Id) == 10 and regex.match(query(Id))
 
-    login(id)
-    query(id)
-    logout(id)
+if __name__ == '__main__':
+    Id = '2016011400'
+
+    login(Id)
+    query(Id)
+    logout(Id)
+    checkValid(Id)
