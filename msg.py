@@ -88,4 +88,4 @@ if __name__ == '__main__':
 
     while True:
         text = input('send msg: ')
-        send_text(['2016011400'], ['2017011470'], text);
+        send_text('2016011400', ['2016011470'], text);

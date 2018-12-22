@@ -2,6 +2,8 @@ import re
 import time
 import sys
 import json
+import hashlib
+import os
 from PyQt5.QtWidgets import *
 from PyQt5 import QtGui, QtCore
 
@@ -59,7 +61,8 @@ class TNWLogin(QWidget):
             self.get_id_signal.emit(str(Id))
             self.close()
         else:
-            QMessageBox.about(self, 'Error', 'Please enter a right ID.')
+            QMessageBox.about(self, 'Error',\
+                    'Please enter a right ID.')
 
 class TNWMain(QMainWindow):
 
@@ -189,20 +192,31 @@ class TNWMain(QMainWindow):
         # TODO rt
         return 0
 
+    def read_msg_file(self):
+        contact = sorted(set(self.presentContact + [self.Id]))
+        hash_object = hashlib.md5(''.join(contact).encode('utf8'))
+        with open('data/' + hash_object.hexdigest(), 'r') as msgf:
+            line = msgf.readline()[:-1]
+            while line:
+                data = json.loads(line)
+                self.show_msg(data)
+                line = msgf.readline()[:-1]
+
     def deal_msg(self, data):
-        print(self.presentContact)
-        contact = sorted(set(data['source'] + data['target']))
+        contact = sorted(set([data['source']] + data['target']))
 
         # write file
-        with open(''.join(contact), 'w+') as msgf:
-            msgf.write(json.dumps(data))
+        hash_object = hashlib.md5(''.join(contact).encode('utf8'))
+        with open('data/' + hash_object.hexdigest(), 'a+') as msgf:
+            msgf.write(json.dumps(data) + '\n')
 
         # Check active chat.
         if contact ==  sorted(set(self.presentContact + [self.Id])):
-            show_msg(data)
+            self.show_msg(data)
             print('present')
         else:
-            print('non present')
+            self.add_contact(sorted(set(contact) - set([self.Id])), \
+                    False)
 
     def show_msg(self, data, align='left'):
         if data['type'] == 'TEXT':
@@ -226,7 +240,7 @@ class TNWMain(QMainWindow):
         msgTextLabel.setWordWrap(True)
         msgVbox.addWidget(msgTextLabel)
 
-        if align == 'right':
+        if data['source'] == self.Id:
             msgHbox.addStretch(2)
             msgHbox.addLayout(msgVbox, 5)
             msgInfoLabel.setAlignment(QtCore.Qt.AlignRight)
@@ -244,16 +258,18 @@ class TNWMain(QMainWindow):
         for i in reversed(range(self.msgAreaVbox.count() - 1)):
             self.msgAreaVbox.itemAt(i).widget().setParent(None)
 
-    def add_contact(self, contact):
+    def add_contact(self, contact, activate=True):
         searchContact = self.search_contact_btn(contact) 
         if searchContact == -1:
             contactBtn = ContactBtn(contact)
             contactBtn.clicked.connect(self.contact_btn_clicked)
             count = self.contactAreaVbox.count()
             self.contactAreaVbox.insertWidget(count - 1, contactBtn)
-            contactBtn.clicked.emit()
-        else:
-            self.contactAreaVbox.itemAt(searchContact).widget().clicked.emit()
+            if activate:
+                contactBtn.clicked.emit()
+        elif activate:
+            self.contactAreaVbox.itemAt(searchContact).\
+                    widget().clicked.emit()
 
     def search_contact_btn(self, contact):
         for i in range(self.contactAreaVbox.count() - 1):
@@ -263,7 +279,8 @@ class TNWMain(QMainWindow):
         return -1
 
     def add_friend_btn_clicked(self):
-        Id, okPressed = QInputDialog.getInt(self, "Add friend","Friend id:", QLineEdit.Normal)
+        Id, okPressed = QInputDialog.getInt(self,\
+                "Add friend","Friend id:", QLineEdit.Normal)
         Id = str(Id)
         if okPressed:
             if Id == self.Id:
@@ -282,6 +299,7 @@ class TNWMain(QMainWindow):
     def contact_btn_clicked(self):
         self.enable_contact()
         self.presentContact = self.sender().contact
+        self.read_msg_file()
         self.conversationLabel.setText('chat with: ' + \
                 ' & '.join(self.presentContact))
         if len(self.presentContact) > 1:
@@ -289,14 +307,20 @@ class TNWMain(QMainWindow):
         else:
             self.queryBtn.show()
 
-    def delete_btn_clicked(self, contact):
-        # TODO delete msg history file
+    def delete_btn_clicked(self):
         searchContact = self.search_contact_btn(self.presentContact)
         if searchContact != -1:
-            self.contactAreaVbox.itemAt(searchContact).widget().setParent(None)
+            self.contactAreaVbox.itemAt(searchContact).widget().\
+                    setParent(None)
             self.disable_contact()
             self.conversationLabel.setText('')
             self.clear_msg_area()
+
+            contact = sorted(set(self.presentContact + [self.Id]))
+            hash_object = hashlib.md5(''.join(contact).encode('utf8'))
+            with open('data/' + hash_object.hexdigest(), 'w') as msgf:
+                msgf.write('')
+            self.presentContact = []
 
     def query_btn_clicked(self):
         result = login.query(self.presentContact[0])
@@ -391,12 +415,14 @@ class TNWAddGroupWidget(QDialog):
     def addId(self):
         Id = self.idTextLine.text()
         if Id == self.Id:
-            QMessageBox.about(self, 'Error', 'You are inlcuded already!')
+            QMessageBox.about(self, 'Error',\
+                    'You are inlcuded already!')
             self.idTextLine.setText('')
         elif login.checkValid(Id):
             self.contact.add(Id)
             self.idTextLine.setText('')
-            self.label.setText('Group member:\n' + ' '.join(sorted(self.contact)))
+            self.label.setText('Group member:\n' +\
+                    ' '.join(sorted(self.contact)))
             self.label.adjustSize()
         else:
             QMessageBox.about(self, 'Error', 'Invalid Id!')
@@ -409,16 +435,17 @@ class TNWAddGroupWidget(QDialog):
         if len(self.contact) > 1:
             self.close()
         else:
-            QMessageBox.about(self, 'Error', 'Groups need more than 2 users(including yourself)!')
+            QMessageBox.about(self, 'Error', 'Groups need more than 2\
+                    users(including yourself)!')
 
     def getContact(self):
         self.exec_()
         return list(self.contact)
 
 # when exiting
-# TODO write to file
 # TODO logout
 # TODO function to check Id
+# TODO write contact list to file
 
 if __name__ == '__main__':
 
