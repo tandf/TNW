@@ -37,7 +37,7 @@ class TNWLogin(QWidget):
         self.idTextLine.move(100, 150)
         self.idTextLine.setAlignment(QtCore.Qt.AlignCenter)
         self.idTextLine.setFocus(True)
-        self.idTextLine.setText('2016011470')
+        self.idTextLine.setText('2016011400')
         self.idTextLine.setStyleSheet('*{font-size:18pt;}')
         regexp = QtCore.QRegExp('^\d{1,10}$')
         validator = QtGui.QRegExpValidator(regexp)
@@ -76,8 +76,8 @@ class TNWMain(QMainWindow):
         if not os.path.exists(idDir):
                 os.makedirs(idDir)
 
-        self.receivingMsg(7070)
-        self.target_port = 7071
+        self.receivingMsg(7071)
+        self.target_port = 7070
 
     def initUI(self):
         self.addFriendBtn= QPushButton('Add friend')
@@ -385,9 +385,7 @@ class TNWMain(QMainWindow):
         fileName, _ = QFileDialog.getOpenFileName(self,"Select file",\
                 "","All Files (*)", options=options)
         if fileName:
-            [data, sendCount] = msg.send_file(self.Id, self.presentContact,\
-                    fileName, self.target_port)
-            self.show_msg(data)
+            print(fileName)
 
     def closeEvent(self, event):
         print('login out')
