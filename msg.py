@@ -11,7 +11,16 @@ import login
 TPORT = 7070
 SPORT = 7071
 
-# def send_msg()
+def send(data, ip):
+    global TPORT
+    try:
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect((ip, TPORT))
+        client.sendall(b'TEXT' + data.encode('utf-8'))
+    except socket.error as exc:
+        print("error while connecting: " + format(exc))
+    finally:
+        client.close()
 
 def send_text(source, target, text):
     data = {}
@@ -21,22 +30,17 @@ def send_text(source, target, text):
     data['target'] = target
     data['data'] = text
     jsonData = json.dumps(data)
-    sendCount = 0
 
+    sendCount = 0
     global TPORT
+
     for Id in target:
         ip = login.query(Id)
         regex = re.compile('(\d{1,3}\.?){4}')
         if regex.match(ip):
-            try:
-                sendCount += 1
-                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client.connect((ip, TPORT))
-                client.sendall(b'TEXT' + jsonData.encode('utf-8'))
-            except socket.error as exc:
-                print("error while connecting: " + format(exc))
-            finally:
-                client.close()
+            sendCount += 1
+            t = threading.Thread(target=send, args=(jsonData, ip))
+            t.start()
 
     return [data, sendCount]
 
