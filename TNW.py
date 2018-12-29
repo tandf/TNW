@@ -358,10 +358,15 @@ class TNWMain(QMainWindow):
         text = self.textEdit.toPlainText()
         self.textEdit.setText('')
         if text:
-            msg.
+            print(msg.send_text(self.Id, self.presentContact, text))
 
     def send_file_btn_clicked(self):
-        return 0
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        fileName, _ = QFileDialog.getOpenFileName(self,"Select file",\
+                "","All Files (*)", options=options)
+        if fileName:
+            print(fileName)
 
     def closeEvent(self, event):
         print('login out')

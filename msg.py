@@ -3,6 +3,7 @@ import socket
 import threading
 import time
 import json
+import re
 from PyQt5 import QtGui, QtCore
 
 import login
@@ -18,19 +19,26 @@ def send_text(source, target, text):
     data['target'] = target
     data['data'] = text
     jsonData = json.dumps(data)
-    try:
-        global TPORT
-        for Id in target:
-            ip = '127.0.0.1' # login.query(Id)
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect((ip, TPORT))
-            client.sendall(b'TEXT' + jsonData.encode('utf-8'))
-    except socket.error as exc:
-        print("error while connecting: " + format(exc))
-    finally:
-        client.close()
+    sendCount = 0
 
-def send_text_t(source, target, text)
+    global TPORT
+    for Id in target:
+        ip = login.query(Id)
+        regex = re.compile('(\d{1,3}\.?){4}')
+        if regex.match(ip):
+            try:
+                sendCount += 1
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((ip, TPORT))
+                client.sendall(b'TEXT' + jsonData.encode('utf-8'))
+            except socket.error as exc:
+                print("error while connecting: " + format(exc))
+            finally:
+                client.close()
+
+    return sendCount
+
+def send_text_t(source, target, text):
     t = threading.Thread(target=send_text, args=(source, target, text))
     t.start()
 
@@ -45,7 +53,7 @@ def send_file(source, target, filename):
     try:
         global TPORT
         for Id in target:
-            ip = '127.0.0.1' # login.query(Id)
+            ip = login.query(Id)
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client.connect((ip, TPORT))
             client.sendall(b'FILE' + jsonData.encode('utf-8'))
@@ -102,6 +110,9 @@ class ServerThread(QtCore.QThread):
         self.stopEvent.set()
 
 if __name__ == '__main__':
+
+    global SPORT
+    SPORT = 7072
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(('0.0.0.0', SPORT))
