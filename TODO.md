@@ -40,9 +40,9 @@ TNW is Not WeChat
 - functions
     - [] one to one
     - [] group talk
-    - [] save history msgs
+    - [x] save history msgs
     - [] file(10M) sending with socket
-    - [] log in and log out
+    - [x] log in and log out
 - Additional functions
     - [] msg withdraw
         - estimate RTT using coming msg time stamp and receving time

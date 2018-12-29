@@ -68,9 +68,13 @@ class TNWMain(QMainWindow):
 
     def __init__(self, Id):
         super().__init__()
-        self.initUI()
-        self.presentContact = []
         self.Id = Id
+        self.presentContact = []
+        self.initUI()
+        self.read_contact_file()
+        idDir = 'data/' + str(self.Id) + '/'
+        if not os.path.exists(idDir):
+                os.makedirs(idDir)
 
     def initUI(self):
         self.addFriendBtn= QPushButton('Add friend')
@@ -118,7 +122,6 @@ class TNWMain(QMainWindow):
 
         self.vboxrHbox1 = QHBoxLayout()
         self.vboxrHbox1.addWidget(self.deleteBtn)
-        # self.vboxrHbox1.addStretch()
         self.vboxrHbox1.addWidget(self.conversationLabel)
 
         self.vboxrHbox2 = QHBoxLayout()
@@ -188,35 +191,49 @@ class TNWMain(QMainWindow):
         self.sendBtn.setEnabled(True)
         self.textEdit.setEnabled(True)
 
+    def write_contact_info(self):
+        contactList = [self.contactAreaVbox.itemAt(i).widget().contact
+            for i in range(self.contactAreaVbox.count() - 1)]
+        with open('data/' + str(self.Id) + '/contact', 'w') as contactF:
+            contactF.write(json.dumps(contactList) + ' ')
+
     def read_contact_file(self):
-        # TODO rt
-        return 0
+        contactFPath = 'data/' + str(self.Id) + '/contact'
+        if os.path.isfile(contactFPath):
+            with open(contactFPath, 'r') as contactF:
+                contactList = json.load(contactF)
+                for contact in contactList:
+                    self.add_contact(contact)
 
     def read_msg_file(self):
+        self.clear_msg_area()
         contact = sorted(set(self.presentContact + [self.Id]))
         hash_object = hashlib.md5(''.join(contact).encode('utf8'))
-        with open('data/' + hash_object.hexdigest(), 'r') as msgf:
-            line = msgf.readline()[:-1]
-            while line:
-                data = json.loads(line)
-                self.show_msg(data)
-                line = msgf.readline()[:-1]
+        filePath ='data/' + str(self.Id) + '/' + hash_object.hexdigest()
+        if os.path.isfile(filePath):
+            with open(filePath, 'r') as msgF:
+                line = msgF.readline()[:-1]
+                while line:
+                    data = json.loads(line)
+                    self.show_msg(data)
+                    line = msgF.readline()[:-1]
 
     def deal_msg(self, data):
         contact = sorted(set([data['source']] + data['target']))
 
         # write file
         hash_object = hashlib.md5(''.join(contact).encode('utf8'))
-        with open('data/' + hash_object.hexdigest(), 'a+') as msgf:
-            msgf.write(json.dumps(data) + '\n')
+        with open('data/' + str(self.Id) + '/' + hash_object.hexdigest(), 'a+')\
+                as msgF:
+            msgF.write(json.dumps(data) + '\n')
 
         # Check active chat.
         if contact ==  sorted(set(self.presentContact + [self.Id])):
             self.show_msg(data)
-            print('present')
         else:
-            self.add_contact(sorted(set(contact) - set([self.Id])), \
-                    False)
+             contactBtn = self.add_contact(sorted(set(contact) -\
+                     set([self.Id])), False)
+             contactBtn.setStyleSheet('*{background-color:#ABC;}')
 
     def show_msg(self, data, align='left'):
         if data['type'] == 'TEXT':
@@ -267,9 +284,11 @@ class TNWMain(QMainWindow):
             self.contactAreaVbox.insertWidget(count - 1, contactBtn)
             if activate:
                 contactBtn.clicked.emit()
+            return contactBtn
         elif activate:
             self.contactAreaVbox.itemAt(searchContact).\
                     widget().clicked.emit()
+        return self.contactAreaVbox.itemAt(searchContact).widget()
 
     def search_contact_btn(self, contact):
         for i in range(self.contactAreaVbox.count() - 1):
@@ -299,6 +318,7 @@ class TNWMain(QMainWindow):
     def contact_btn_clicked(self):
         self.enable_contact()
         self.presentContact = self.sender().contact
+        self.sender().setStyleSheet('*{background-color:white}')
         self.read_msg_file()
         self.conversationLabel.setText('chat with: ' + \
                 ' & '.join(self.presentContact))
@@ -318,8 +338,9 @@ class TNWMain(QMainWindow):
 
             contact = sorted(set(self.presentContact + [self.Id]))
             hash_object = hashlib.md5(''.join(contact).encode('utf8'))
-            with open('data/' + hash_object.hexdigest(), 'w') as msgf:
-                msgf.write('')
+            with open('data/' + str(self.Id) + '/' + hash_object.hexdigest(),\
+                    'w') as msgF:
+                msgF.write('')
             self.presentContact = []
 
     def query_btn_clicked(self):
@@ -337,10 +358,16 @@ class TNWMain(QMainWindow):
         text = self.textEdit.toPlainText()
         self.textEdit.setText('')
         if text:
-            print(text)
+            msg.
 
     def send_file_btn_clicked(self):
         return 0
+
+    def closeEvent(self, event):
+        print('login out')
+        login.logout(self.Id)
+        self.write_contact_info();
+        event.accept()
 
 class ContactBtn(QPushButton):
     def __init__(self, contact):
@@ -356,7 +383,6 @@ class ContactBtn(QPushButton):
             self.setText(self.contact[0])
 
 class TNWAddGroupWidget(QDialog):
-    # get_id_signal = QtCore.pyqtSignal(str)
 
     def __init__(self, Id, parent = None):
         super().__init__(parent)
@@ -442,10 +468,8 @@ class TNWAddGroupWidget(QDialog):
         self.exec_()
         return list(self.contact)
 
-# when exiting
-# TODO logout
-# TODO function to check Id
-# TODO write contact list to file
+# TODO send msg
+# TODO send file
 
 if __name__ == '__main__':
 

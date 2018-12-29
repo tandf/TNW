@@ -30,6 +30,30 @@ def send_text(source, target, text):
     finally:
         client.close()
 
+def send_text_t(source, target, text)
+    t = threading.Thread(target=send_text, args=(source, target, text))
+    t.start()
+
+def send_file(source, target, filename):
+    data = {}
+    data['type'] = 'FILE'
+    data['source'] = source
+    data['time'] = int(round(time.time() * 1000))
+    data['target'] = target
+    data['data'] = filename
+    jsonData = json.dumps(data)
+    try:
+        global TPORT
+        for Id in target:
+            ip = '127.0.0.1' # login.query(Id)
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.connect((ip, TPORT))
+            client.sendall(b'FILE' + jsonData.encode('utf-8'))
+    except socket.error as exc:
+        print("error while connecting: " + format(exc))
+    finally:
+        client.close()
+
 def deal_msg(sock, addr, incomingMsg):
     msgType = sock.recv(4)
     if msgType == b'TEXT':
