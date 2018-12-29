@@ -257,17 +257,19 @@ class TNWMain(QMainWindow):
         msgTextLabel.setWordWrap(True)
         msgVbox.addWidget(msgTextLabel)
 
+        marginWidget = QWidget()
+        marginWidget.setLayout(msgVbox)
+        marginWidget.setStyleSheet('*{background-color:#DDD;}')
+
         if data['source'] == self.Id:
             msgHbox.addStretch(2)
-            msgHbox.addLayout(msgVbox, 5)
+            msgHbox.addWidget(marginWidget, 5)
             msgInfoLabel.setAlignment(QtCore.Qt.AlignRight)
             msgTextLabel.setAlignment(QtCore.Qt.AlignRight)
         else:
-            msgHbox.addLayout(msgVbox, 5)
+            msgHbox.addWidget(marginWidget, 5)
             msgHbox.addStretch(2)
 
-        msgInfoLabel.setStyleSheet('*{background-color:yellow;}')
-        msgTextLabel.setStyleSheet('*{background-color:yellow;}')
         count = self.msgAreaVbox.count()
         self.msgAreaVbox.insertWidget(count - 1, msgWidget)
 
@@ -358,7 +360,16 @@ class TNWMain(QMainWindow):
         text = self.textEdit.toPlainText()
         self.textEdit.setText('')
         if text:
-            print(msg.send_text(self.Id, self.presentContact, text))
+            [data, sendCount] = msg.send_text(self.Id, self.presentContact, text)
+            print(sendCount)
+            if 1 == len(self.presentContact) and 1 == sendCount:
+                print("text sent to user")
+            elif 1 < len(self.presentContact) and sendCount:
+                print("text sent to users")
+            else:
+                print("fail to send text")
+                return
+            self.show_msg(data)
 
     def send_file_btn_clicked(self):
         options = QFileDialog.Options()
@@ -473,11 +484,10 @@ class TNWAddGroupWidget(QDialog):
         self.exec_()
         return list(self.contact)
 
-# TODO send msg
 # TODO send file
 
 if __name__ == '__main__':
-
     app = QApplication(sys.argv)
+    app.setStyle('Fusion')
     tnw = TNW()
     sys.exit(app.exec_())

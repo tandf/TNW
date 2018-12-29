@@ -11,6 +11,8 @@ import login
 TPORT = 7070
 SPORT = 7071
 
+# def send_msg()
+
 def send_text(source, target, text):
     data = {}
     data['type'] = 'TEXT'
@@ -36,7 +38,7 @@ def send_text(source, target, text):
             finally:
                 client.close()
 
-    return sendCount
+    return [data, sendCount]
 
 def send_text_t(source, target, text):
     t = threading.Thread(target=send_text, args=(source, target, text))
@@ -111,7 +113,6 @@ class ServerThread(QtCore.QThread):
 
 if __name__ == '__main__':
 
-    global SPORT
     SPORT = 7072
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
