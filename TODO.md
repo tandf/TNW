@@ -1,57 +1,41 @@
 # TNW
+TNW is Not WeChat
+
 An instant messaging app for 2018 Computer Networks Homework.
 
 Author: tandf
 
-TNW is Not WeChat
-
 ## Protocol
 - use json
 - source
-- time stamp
 - target
+- time stamp
 - type
     - TEXT
-    - WTDW
     - FILE
-    - GROU
+    - RECORDING
 - data
     - text packet: msg
-    - withdraw packet: sourceId and timestamp
     - file packet: file name
+    - recording packet: recording name (generated using hash funciton)
+
+If file or recording, get file after get packet.
 
 ## Directory Structure
 - login.py (log in/out, query)
 - msg.py (send and receive message)
 - TNW.py (ui and main function)
 - data/
-    - contact
-    - msg
-- recv_files/
+    - [ID]/
+        - contact
+        - [msg file, name generated using hash function)
+        - files/ (files received)
+        - recordings/ (recordings received)
+    - recv (temp dir for receiving files and recordings)
 
 ## Threads
-- UI
-- receive msg (always loop)
+- UI (main thread)
+- receive msg
+    - server thread, always loop
+    - socket thread, threads to deal with incoming tcp link
 - send msg (open thread at incoming connect)
-
-## TODO list
-- [x] design directory structure
-- [x] test socket coding
-- functions
-    - [] one to one
-    - [] group talk
-    - [x] save history msgs
-    - [] file(10M) sending with socket
-    - [x] log in and log out
-- Additional functions
-    - [] msg withdraw
-        - estimate RTT using coming msg time stamp and receving time
-            - average with older one
-        - receving time and RTT decide weither to withdraw a certain msg(text or file)
-        - delete file or text and then update window
-- with gui
-    - [] input in a qt window
-    - [] qss
-    - [] test in windows and linux
-- pyinstaller
-
