@@ -405,6 +405,7 @@ class TNWMain(QMainWindow):
 
     def play_recording(self, recordingFile, options):
         recordingBytes = b''
+        recordingFile = 'data/' + str(self.Id) + '/recordings/' + recordingFile
         with open(recordingFile, 'rb') as recordingF:
             while True:
                 chunk = recordingF.read(1024)
@@ -419,7 +420,6 @@ class TNWMain(QMainWindow):
             samplerate = 7000
         elif 'Fast' == options['speed']:
             samplerate = 19200
-        print(options['speed'])
         sounddevice.playrec(recording, blocking=False,\
                 samplerate=samplerate, channels=1)
 
@@ -737,7 +737,8 @@ class TNWRecordingWidget(QDialog):
             recordingName = self.Id + ''.join(self.presentContact) +\
                     str(time.time())
             hash_object = hashlib.md5(recordingName.encode('utf8'))
-            self.recordingFile = hash_object.hexdigest()
+            self.recordingFile = 'data/' + str(self.Id) + '/recordings/' +\
+                    hash_object.hexdigest()
             with open(self.recordingFile, 'wb') as recordingF:
                 recordingF.write(recordingBytes)
 
@@ -747,8 +748,14 @@ class TNWRecordingWidget(QDialog):
 
     def send_btn_clicked(self):
         self.OK = True
+        if 'Normal' == self.speedBtn.text():
+            samplerate = 9600
+        elif 'Slow' == self.speedBtn.text():
+            samplerate = 7000
+        elif 'Fast' == self.speedBtn.text():
+            samplerate = 19200
         sounddevice.playrec(self.recording, blocking=True,\
-                samplerate=9600, channels=1)
+                samplerate=samplerate, channels=1)
         self.close()
 
     def speed_btn_clicked(self):

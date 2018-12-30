@@ -405,6 +405,7 @@ class TNWMain(QMainWindow):
 
     def play_recording(self, recordingFile, options):
         recordingBytes = b''
+        recordingFile = 'data/' + str(self.Id) + '/recordings/' + recordingFile
         with open(recordingFile, 'rb') as recordingF:
             while True:
                 chunk = recordingF.read(1024)
@@ -692,29 +693,23 @@ class TNWRecordingWidget(QDialog):
 
         self.Hbox1 = QHBoxLayout()
         self.Hbox1.addStretch()
-        self.Hbox1.addWidget(self.lcd)
+        self.Hbox1.addWidget(self.actionBtn)
+        self.Hbox1.addStretch()
+        self.Hbox1.addWidget(self.sendBtn)
         self.Hbox1.addStretch()
 
         self.Hbox2 = QHBoxLayout()
         self.Hbox2.addStretch()
-        self.Hbox2.addWidget(self.actionBtn)
+        self.Hbox2.addWidget(self.speedBtn)
         self.Hbox2.addStretch()
-        self.Hbox2.addWidget(self.sendBtn)
-        self.Hbox2.addStretch()
-
-        self.Hbox3 = QHBoxLayout()
-        self.Hbox3.addStretch()
-        self.Hbox3.addWidget(self.speedBtn)
-        self.Hbox3.addStretch()
 
         self.Vbox = QVBoxLayout()
         self.Vbox.addLayout(self.Hbox1)
         self.Vbox.addLayout(self.Hbox2)
-        self.Vbox.addLayout(self.Hbox3)
 
         self.setLayout(self.Vbox)
 
-        self.setFixedSize(200, 200)
+        self.setFixedSize(200, 150)
         self.center()
         self.setWindowTitle('Send recording.')    
         self.show()
@@ -730,7 +725,6 @@ class TNWRecordingWidget(QDialog):
             self.recordingFile = ''
             self.recording = sounddevice.rec(self.duration * self.samplerate,
                     samplerate=self.samplerate, channels=1)
-            # TODO start counting
 
             self.state = 1
             self.actionBtn.setText('Stop')
@@ -744,7 +738,8 @@ class TNWRecordingWidget(QDialog):
             recordingName = self.Id + ''.join(self.presentContact) +\
                     str(time.time())
             hash_object = hashlib.md5(recordingName.encode('utf8'))
-            self.recordingFile = hash_object.hexdigest()
+            self.recordingFile = 'data/' + str(self.Id) + '/recordings/' +\
+                    hash_object.hexdigest()
             with open(self.recordingFile, 'wb') as recordingF:
                 recordingF.write(recordingBytes)
 
