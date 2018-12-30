@@ -414,15 +414,18 @@ class TNWMain(QMainWindow):
     def open_file(self, fileName):
         fileName = 'data/' + str(self.Id) + '/files/' + fileName
         if os.path.isfile(fileName):
-            if sys.platform.startswith('darwin'):
-                path = os.path.abspath(fileName)
-                subprocess.call(('open', path))
-            elif os.name == 'nt': # For Windows
-                path = os.path.abspath(fileName)
-                os.startfile(path)
-            elif os.name == 'posix': # For Linux, Mac, etc.
-                path = os.path.abspath(fileName)
-                subprocess.call(('xdg-open', path))
+            try:
+                if sys.platform.startswith('darwin'):
+                    path = os.path.abspath(fileName)
+                    subprocess.call(('open', path))
+                elif os.name == 'nt': # For Windows
+                    path = os.path.abspath(fileName)
+                    os.startfile(path)
+                elif os.name == 'posix': # For Linux, Mac, etc.
+                    path = os.path.abspath(fileName)
+                    subprocess.call(('xdg-open', path))
+            except:
+                print('Fail to open file.')
         else:
             QMessageBox.critical(self, 'Cannot find file.',\
                     'File doesn\'t exist!')
