@@ -24,6 +24,7 @@ class TNW():
 
     def get_id(self, Id):
         self.mainWindow = TNWMain(Id)
+        self.mainWindow.setStyleSheet('font-size: 11pt')
 
 class TNWLogin(QWidget):
     get_id_signal = QtCore.pyqtSignal(str)
@@ -130,17 +131,24 @@ class TNWMain(QMainWindow):
         self.queryBtn.setFixedSize(60, 30)
         self.queryBtn.clicked.connect(self.query_btn_clicked)
 
-        self.sendFileBtn = QPushButton()
-        self.sendFileBtn.setIcon(QtGui.QIcon('resources/send_file.png'))
-        self.sendFileBtn.setIconSize(QtCore.QSize(25, 25))
-        self.sendFileBtn.setFixedSize(30, 30)
-        self.sendFileBtn.clicked.connect(self.send_file_btn_clicked)
 
         self.sendRecordingBtn = QPushButton('')
         self.sendRecordingBtn.setIcon(QtGui.QIcon('resources/record.png'))
         self.sendRecordingBtn.setIconSize(QtCore.QSize(25, 25))
         self.sendRecordingBtn.setFixedSize(30, 30)
         self.sendRecordingBtn.clicked.connect(self.send_recording_btn_clicked)
+
+        self.sendFileBtn = QPushButton()
+        self.sendFileBtn.setIcon(QtGui.QIcon('resources/send_file.png'))
+        self.sendFileBtn.setIconSize(QtCore.QSize(25, 25))
+        self.sendFileBtn.setFixedSize(30, 30)
+        self.sendFileBtn.clicked.connect(self.send_file_btn_clicked)
+
+        self.shakeBtn = QPushButton('')
+        self.shakeBtn.setIcon(QtGui.QIcon('resources/shake.png'))
+        self.shakeBtn.setIconSize(QtCore.QSize(25, 25))
+        self.shakeBtn.setFixedSize(30, 30)
+        self.shakeBtn.clicked.connect(self.shake_btn_clicked)
 
         self.sendBtn = QPushButton('Send')
         self.sendBtn.setFixedSize(50, 30)
@@ -163,6 +171,7 @@ class TNWMain(QMainWindow):
         self.vboxrHbox2.addStretch()
         self.vboxrHbox2.addWidget(self.sendRecordingBtn)
         self.vboxrHbox2.addWidget(self.sendFileBtn)
+        self.vboxrHbox2.addWidget(self.shakeBtn)
         self.vboxrHbox2.addWidget(self.sendBtn)
 
         self.contactArea = QScrollArea()
@@ -205,6 +214,15 @@ class TNWMain(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def shake(self):
+        location = self.frameGeometry()
+        for i in range(5):
+            self.move(location.x() + 5, location.y() + 5)
+            time.sleep(0.05)
+            self.move(location.x() - 5, location.y() - 5)
+            time.sleep(0.05)
+        self.move(location.topLeft())
+
     def receivingMsg(self, port):
         self.server = msg.ServerThread(port, self)
         self.server.incomingMsg.connect(self.deal_msg)
@@ -216,6 +234,7 @@ class TNWMain(QMainWindow):
         self.queryBtn.setEnabled(False)
         self.sendRecordingBtn.setEnabled(False)
         self.sendFileBtn.setEnabled(False)
+        self.shakeBtn.setEnabled(False)
         self.sendBtn.setEnabled(False)
         self.textEdit.setEnabled(False)
 
@@ -224,6 +243,7 @@ class TNWMain(QMainWindow):
         self.queryBtn.setEnabled(True)
         self.sendRecordingBtn.setEnabled(True)
         self.sendFileBtn.setEnabled(True)
+        self.shakeBtn.setEnabled(True)
         self.sendBtn.setEnabled(True)
         self.textEdit.setEnabled(True)
 
@@ -283,12 +303,13 @@ class TNWMain(QMainWindow):
         elif 'RECORDING' == data['type']:
             os.rename('data/recv/' + data['data'][0], 'data/' + str(self.Id) +\
                     '/recordings/' + data['data'][0])
+        elif 'SHAKE' == data['type']:
+            self.shake()
 
-        # Play sound
+        # Ring
         data, samplerate = soundfile.read('resources/stairs.ogg',\
                 dtype='float32')
         sounddevice.play(data, samplerate)
-
 
     def show_msg(self, data, align='left'):
         if data['type'] == 'TEXT':
@@ -297,6 +318,8 @@ class TNWMain(QMainWindow):
             self.show_file(data)
         elif data['type'] == 'RECORDING':
             self.show_recording(data)
+        elif data['type'] == 'SHAKE':
+            self.show_shake(data)
 
     def show_text(self, data):
         timeArray = time.localtime(data['time'] / 1000)
@@ -412,6 +435,44 @@ class TNWMain(QMainWindow):
             msgInfoLabel.setAlignment(QtCore.Qt.AlignRight)
         else:
             msgHbox.addWidget(marginWidget, 0)
+            msgHbox.addStretch(2)
+
+        count = self.msgAreaVbox.count()
+        self.msgAreaVbox.insertWidget(count - 1, msgWidget)
+
+    def show_shake(self, data):
+        timeArray = time.localtime(data['time'] / 1000)
+        info = data['source'] + ' ' + \
+                time.strftime("%Y-%m-%d %H:%M:%S", timeArray)
+        text = 'Shake your window.'
+
+        msgWidget = QWidget()
+        msgHbox = QHBoxLayout()
+        msgVbox = QVBoxLayout()
+        msgWidget.setLayout(msgHbox)
+
+        msgInfoLabel = QLabel()
+        msgInfoLabel.setText(info)
+        msgInfoLabel.setWordWrap(True)
+        msgVbox.addWidget(msgInfoLabel)
+
+        msgTextLabel = QLabel()
+        msgTextLabel.setText(text)
+        msgTextLabel.setWordWrap(True)
+        msgTextLabel.setStyleSheet('font-style: italic; font-weight: bold')
+        msgVbox.addWidget(msgTextLabel)
+
+        marginWidget = QWidget()
+        marginWidget.setLayout(msgVbox)
+        marginWidget.setStyleSheet('background-color:#DDD;')
+
+        if data['source'] == self.Id:
+            msgHbox.addStretch(2)
+            msgHbox.addWidget(marginWidget, 5)
+            msgInfoLabel.setAlignment(QtCore.Qt.AlignRight)
+            msgTextLabel.setAlignment(QtCore.Qt.AlignRight)
+        else:
+            msgHbox.addWidget(marginWidget, 5)
             msgHbox.addStretch(2)
 
         count = self.msgAreaVbox.count()
@@ -539,6 +600,16 @@ class TNWMain(QMainWindow):
             text = 'No such User!'
         QMessageBox.about(self, 'Query result', text)
 
+    def shake_btn_clicked(self):
+        [data, sendCount] = msg.send_shake(self.Id, self.presentContact,\
+                self.target_port)
+        if not sendCount:
+            QMessageBox.about(self, "Sending failed", "Friend not online.")
+            return
+
+        self.show_msg(data)
+        self.write_msg_file(data)
+
     def send_btn_clicked(self):
         text = self.textEdit.toPlainText()
         self.textEdit.setText('')
@@ -546,7 +617,7 @@ class TNWMain(QMainWindow):
             [data, sendCount] = msg.send_text(self.Id, self.presentContact,\
                     text, self.target_port)
             if not sendCount:
-                print("fail to send text")
+                QMessageBox.about(self, "Sending failed", "Friend not online.")
                 return
 
             self.show_msg(data)
@@ -560,7 +631,7 @@ class TNWMain(QMainWindow):
             [data, sendCount] = msg.send_file(self.Id, self.presentContact,\
                     fileName, self.target_port)
             if not sendCount:
-                print("fail to send text")
+                QMessageBox.about(self, "Sending failed", "Friend not online.")
                 return
             self.show_msg(data)
             self.write_msg_file(data)
@@ -573,7 +644,7 @@ class TNWMain(QMainWindow):
                     self.presentContact, recordingFile, options,\
                     self.target_port)
             if not sendCount:
-                print("fail to send text")
+                QMessageBox.about(self, "Sending failed", "Friend not online.")
                 return
             self.show_msg(data)
             self.write_msg_file(data)

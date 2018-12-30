@@ -39,6 +39,25 @@ def send_text(source, target, text, port):
 
     return [data, sendCount]
 
+def send_shake(source, target, port):
+    data = {}
+    data['type'] = 'SHAKE'
+    data['source'] = source
+    data['time'] = int(round(time.time() * 1000))
+    data['target'] = target
+    data['data'] = ''
+
+    sendCount = 0
+    for Id in target:
+        ip = login.query(Id)
+        regex = re.compile('(\d{1,3}\.?){4}')
+        if regex.match(ip):
+            sendCount += 1
+            t = threading.Thread(target=send_text_thread, args=(data, ip, port))
+            t.start()
+
+    return [data, sendCount]
+
 def send_file_thread(data, ip, port):
     fileName = data['data']
     data['data'] = ntpath.basename(fileName)
