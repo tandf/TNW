@@ -93,14 +93,18 @@ class TNWMain(QMainWindow):
             os.makedirs(recvDir)
 
         self.receivingMsg(7070)
-        self.target_port = 7071
+        self.target_port = 7070
 
     def initUI(self):
-        self.addFriendBtn= QPushButton('Add friend')
+        self.addFriendBtn= QPushButton('   Add friend')
+        self.addFriendBtn.setIcon(QtGui.QIcon('resources/add.png'))
+        self.addFriendBtn.setIconSize(QtCore.QSize(25, 25))
         self.addFriendBtn.setFixedSize(140, 30)
         self.addFriendBtn.clicked.connect(self.add_friend_btn_clicked)
 
-        self.addGroupBtn= QPushButton('Add group')
+        self.addGroupBtn= QPushButton('   Add Group')
+        self.addGroupBtn.setIcon(QtGui.QIcon('resources/add_group.png'))
+        self.addGroupBtn.setIconSize(QtCore.QSize(25, 25))
         self.addGroupBtn.setFixedSize(140, 30)
         self.addGroupBtn.clicked.connect(self.add_group_btn_clicked)
 
@@ -115,24 +119,30 @@ class TNWMain(QMainWindow):
         self.textEdit = QTextEdit()
         self.textEdit.setFixedHeight(100)
 
-        self.deleteBtn = QPushButton('Delete')
-        self.deleteBtn.setFixedSize(60, 30)
+        self.deleteBtn = QPushButton()
+        self.deleteBtn.setIcon(QtGui.QIcon('resources/delete.png'))
+        self.deleteBtn.setIconSize(QtCore.QSize(25, 25))
+        self.deleteBtn.setFixedSize(30, 30)
         self.deleteBtn.clicked.connect(self.delete_btn_clicked)
 
         self.queryBtn = QPushButton('Query')
         self.queryBtn.setFixedSize(60, 30)
         self.queryBtn.clicked.connect(self.query_btn_clicked)
 
-        self.sendFileBtn = QPushButton('Send file')
-        self.sendFileBtn.setFixedSize(100, 30)
+        self.sendFileBtn = QPushButton()
+        self.sendFileBtn.setIcon(QtGui.QIcon('resources/send_file.png'))
+        self.sendFileBtn.setIconSize(QtCore.QSize(25, 25))
+        self.sendFileBtn.setFixedSize(30, 30)
         self.sendFileBtn.clicked.connect(self.send_file_btn_clicked)
 
-        self.sendRecordingBtn = QPushButton('Recording')
-        self.sendRecordingBtn.setFixedSize(100, 30)
+        self.sendRecordingBtn = QPushButton('')
+        self.sendRecordingBtn.setIcon(QtGui.QIcon('resources/record.png'))
+        self.sendRecordingBtn.setIconSize(QtCore.QSize(25, 25))
+        self.sendRecordingBtn.setFixedSize(30, 30)
         self.sendRecordingBtn.clicked.connect(self.send_recording_btn_clicked)
 
-        self.sendBtn = QPushButton('Send <C-CR>')
-        self.sendBtn.setFixedSize(100, 30)
+        self.sendBtn = QPushButton('Send')
+        self.sendBtn.setFixedSize(50, 30)
         self.sendBtn.clicked.connect(self.send_btn_clicked)
         shortcut = QShortcut(QtGui.QKeySequence("Ctrl+Return"), self)
         shortcut.activated.connect(self.send_btn_clicked) 
@@ -203,6 +213,7 @@ class TNWMain(QMainWindow):
     def disable_contact(self):
         self.deleteBtn.setEnabled(False)
         self.queryBtn.setEnabled(False)
+        self.sendRecordingBtn.setEnabled(False)
         self.sendFileBtn.setEnabled(False)
         self.sendBtn.setEnabled(False)
         self.textEdit.setEnabled(False)
@@ -210,6 +221,7 @@ class TNWMain(QMainWindow):
     def enable_contact(self):
         self.deleteBtn.setEnabled(True)
         self.queryBtn.setEnabled(True)
+        self.sendRecordingBtn.setEnabled(True)
         self.sendFileBtn.setEnabled(True)
         self.sendBtn.setEnabled(True)
         self.textEdit.setEnabled(True)
@@ -366,25 +378,32 @@ class TNWMain(QMainWindow):
 
         msgInfoLabel = QLabel()
         msgInfoLabel.setText(info)
-        msgInfoLabel.setWordWrap(True)
+        msgInfoLabel.setWordWrap(False)
         msgVbox.addWidget(msgInfoLabel)
 
         recordingBtn = QPushButton()
-        recordingBtn.setText('R')
+        recordingBtn.setIcon(QtGui.QIcon('resources/play.png'))
+        recordingBtn.setIconSize(QtCore.QSize(40, 40))
+        recordingBtn.setFixedSize(50, 50)
         recordingBtn.clicked.connect(lambda :\
                 self.play_recording(recordingFile, options))
-        msgVbox.addWidget(recordingBtn)
+
+        recordingHbox = QHBoxLayout()
+        recordingHbox.addStretch()
+        recordingHbox.addWidget(recordingBtn)
+        recordingHbox.addStretch()
+        msgVbox.addLayout(recordingHbox)
 
         marginWidget = QWidget()
         marginWidget.setLayout(msgVbox)
-        marginWidget.setStyleSheet('background-color:#DDD;')
+        marginWidget.setStyleSheet('background-color:#CCC;')
 
         if data['source'] == self.Id:
             msgHbox.addStretch(2)
-            msgHbox.addWidget(marginWidget, 5)
+            msgHbox.addWidget(marginWidget, 0)
             msgInfoLabel.setAlignment(QtCore.Qt.AlignRight)
         else:
-            msgHbox.addWidget(marginWidget, 5)
+            msgHbox.addWidget(marginWidget, 0)
             msgHbox.addStretch(2)
 
         count = self.msgAreaVbox.count()
