@@ -4,6 +4,7 @@ import numpy
 import time
 import subprocess
 import sounddevice
+import soundfile
 import time
 import sys
 import json
@@ -273,7 +274,7 @@ class TNWMain(QMainWindow):
                      set([self.Id])), False)
              contactBtn.setStyleSheet('background-color:#ABC;')
 
-        # move file or recordings
+        # Move file or recordings
         if 'FILE' == data['type']:
             targetPath = 'data/' + str(self.Id) + '/files/' + data['data']
             if os.path.isfile(targetPath):
@@ -282,6 +283,11 @@ class TNWMain(QMainWindow):
         elif 'RECORDING' == data['type']:
             os.rename('data/recv/' + data['data'][0], 'data/' + str(self.Id) +\
                     '/recordings/' + data['data'][0])
+
+        # Play sound
+        data, samplerate = soundfile.read('resources/stairs.ogg',\
+                dtype='float32')
+        sounddevice.play(data, samplerate)
 
 
     def show_msg(self, data, align='left'):
