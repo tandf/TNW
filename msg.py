@@ -41,6 +41,7 @@ def send_text(source, target, text, port):
 
 def send_file_thread(data, ip, port):
     fileName = data['data']
+    data['data'] = ntpath.basename(fileName)
     data = json.dumps(data)
     try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -70,7 +71,7 @@ def send_file(source, target, fileName, port):
     data['source'] = source
     data['time'] = int(round(time.time() * 1000))
     data['target'] = target
-    data['data'] = ntpath.basename(fileName)
+    data['data'] = fileName
     jsonData = json.dumps(data)
 
     sendCount = 0
@@ -80,6 +81,53 @@ def send_file(source, target, fileName, port):
         if regex.match(ip):
             sendCount += 1
             t = threading.Thread(target=send_file_thread, args=(data, ip, port))
+            t.start()
+
+    return [data, sendCount]
+
+def send_recording_thread(data, ip, port):
+    [recordingName, options] = data['data']
+    data['data'] = [ntpath.basename(recordingName), options]
+    data = json.dumps(data)
+    try:
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect((ip, port))
+        client.send(data.encode('utf-8'))
+        respond = client.recv(3)
+        if respond == b'ACK':
+            with open(recordingName, 'rb') as sendF:
+                while True:
+                    chunk = sendF.read(1024)
+                    if not chunk:
+                        break;
+                    client.sendall(chunk)
+                    if(client.recv(3) != b'ACK'):
+                        print('no ack received while sending recording')
+                print('send ' + recordingName)
+        else:
+            print('no ack received')
+    except socket.error as exc:
+        print("error while connecting: " + format(exc))
+    finally:
+        client.close()
+
+def send_recording(source, target, recordingName, options, port):
+    data = {}
+    data['type'] = 'RECORDING'
+    data['source'] = source
+    data['time'] = int(round(time.time() * 1000))
+    data['target'] = target
+    data['data'] = [recordingName, options]
+    jsonData = json.dumps(data)
+
+    sendCount = 0
+    for Id in target:
+        ip = login.query(Id)
+        regex = re.compile('(\d{1,3}\.?){4}')
+        if regex.match(ip):
+            sendCount += 1
+            t = threading.Thread(target=send_recording_thread,\
+                    args=(data, ip, port))
             t.start()
 
     return [data, sendCount]
@@ -97,7 +145,18 @@ def deal_msg(sock, incomingMsg):
     if data['type'] == 'FILE':
         fileName = data['data']
         sock.sendall(b'ACK')
-        with open('files/' + fileName, 'wb') as recvF:
+        with open('data/recv/' + fileName, 'wb') as recvF:
+            part = sock.recv(1024)
+            while part:
+                recvF.write(part)
+                sock.sendall(b'ACK')
+                part = sock.recv(1024)
+        print('file received')
+
+    elif data['type'] == 'RECORDING':
+        [recordingName, options] = data['data']
+        sock.sendall(b'ACK')
+        with open('data/recv/' + recordingName, 'wb') as recvF:
             part = sock.recv(1024)
             while part:
                 recvF.write(part)
