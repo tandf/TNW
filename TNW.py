@@ -673,15 +673,24 @@ class TNWRecordingWidget(QDialog):
         self.duration = 30
 
     def initUI(self):
+        self.playIcon = QtGui.QIcon('resources/play.png')
+        self.stopIcon = QtGui.QIcon('resources/stop.png')
+        self.restartIcon = QtGui.QIcon('resources/restart.png')
+        self.sendIcon = QtGui.QIcon('resources/send.png')
+
         self.lcd = QLCDNumber()
         self.lcd.setFixedSize(140, 70)
         self.lcd.display('11:55')
 
-        self.actionBtn = QPushButton('Start')
+        self.actionBtn = QPushButton()
+        self.actionBtn.setIcon(self.playIcon)
+        self.actionBtn.setIconSize(QtCore.QSize(55, 55))
         self.actionBtn.setFixedSize(60, 60)
         self.actionBtn.clicked.connect(self.action_btn_clicked)
 
-        self.sendBtn = QPushButton('Send')
+        self.sendBtn = QPushButton()
+        self.sendBtn.setIcon(self.sendIcon)
+        self.sendBtn.setIconSize(QtCore.QSize(55, 55))
         self.sendBtn.setFixedSize(60, 60)
         self.sendBtn.clicked.connect(self.send_btn_clicked)
         self.sendBtn.setEnabled(False)
@@ -726,7 +735,7 @@ class TNWRecordingWidget(QDialog):
                     samplerate=self.samplerate, channels=1)
 
             self.state = 1
-            self.actionBtn.setText('Stop')
+            self.actionBtn.setIcon(self.stopIcon)
 
         elif 1 == self.state:
             sounddevice.stop()
@@ -743,7 +752,7 @@ class TNWRecordingWidget(QDialog):
                 recordingF.write(recordingBytes)
 
             self.state = 1
-            self.actionBtn.setText('Restart')
+            self.actionBtn.setIcon(self.restartIcon)
             self.sendBtn.setEnabled(True)
 
     def send_btn_clicked(self):
