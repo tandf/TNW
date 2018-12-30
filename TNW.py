@@ -44,7 +44,7 @@ class TNWLogin(QWidget):
         self.idTextLine.move(100, 150)
         self.idTextLine.setAlignment(QtCore.Qt.AlignCenter)
         self.idTextLine.setFocus(True)
-        self.idTextLine.setText('2016011470')
+        self.idTextLine.setText('')
         self.idTextLine.setStyleSheet('font-size:18pt;')
         regexp = QtCore.QRegExp('^\d{1,10}$')
         validator = QtGui.QRegExpValidator(regexp)
@@ -103,7 +103,7 @@ class TNWMain(QMainWindow):
         self.addFriendBtn.setFixedSize(140, 30)
         self.addFriendBtn.clicked.connect(self.add_friend_btn_clicked)
 
-        self.addGroupBtn= QPushButton('   Add Group')
+        self.addGroupBtn= QPushButton('   Add group')
         self.addGroupBtn.setIcon(QtGui.QIcon('resources/add_group.png'))
         self.addGroupBtn.setIconSize(QtCore.QSize(25, 25))
         self.addGroupBtn.setFixedSize(140, 30)
