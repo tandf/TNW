@@ -275,8 +275,10 @@ class TNWMain(QMainWindow):
 
         # move file or recordings
         if 'FILE' == data['type']:
-            os.rename('data/recv/' + data['data'], 'data/' + str(self.Id) +\
-                    '/files/' + data['data'])
+            targetPath = 'data/' + str(self.Id) + '/files/' + data['data']
+            if os.path.isfile(targetPath):
+                os.remove(targetPath)
+            os.rename('data/recv/' + data['data'], targetPath)
         elif 'RECORDING' == data['type']:
             os.rename('data/recv/' + data['data'][0], 'data/' + str(self.Id) +\
                     '/recordings/' + data['data'][0])
@@ -413,11 +415,14 @@ class TNWMain(QMainWindow):
         fileName = 'data/' + str(self.Id) + '/files/' + fileName
         if os.path.isfile(fileName):
             if sys.platform.startswith('darwin'):
-                subprocess.call(('open', fileName))
+                path = os.path.abspath(fileName)
+                subprocess.call(('open', path))
             elif os.name == 'nt': # For Windows
-                os.startfile(fileName)
+                path = os.path.abspath(fileName)
+                os.startfile(path)
             elif os.name == 'posix': # For Linux, Mac, etc.
-                subprocess.call(('xdg-open', fileName))
+                path = os.path.abspath(fileName)
+                subprocess.call(('xdg-open', path))
         else:
             QMessageBox.critical(self, 'Cannot find file.',\
                     'File doesn\'t exist!')
@@ -540,7 +545,6 @@ class TNWMain(QMainWindow):
 
     def send_file_btn_clicked(self):
         options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
         fileName, _ = QFileDialog.getOpenFileName(self,"Select file",\
                 "","All Files (*)", options=options)
         if fileName:
