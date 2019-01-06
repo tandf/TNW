@@ -74,8 +74,6 @@ def send_file_thread(data, ip, port):
                     if not chunk:
                         break;
                     client.sendall(chunk)
-                    if(client.recv(3) != b'ACK'):
-                        print('no ack received while sending file')
                 print('send ' + fileName)
         else:
             print('no ack received')
@@ -120,8 +118,6 @@ def send_recording_thread(data, ip, port):
                     if not chunk:
                         break;
                     client.sendall(chunk)
-                    if(client.recv(3) != b'ACK'):
-                        print('no ack received while sending recording')
                 print('send ' + recordingName)
         else:
             print('no ack received')
@@ -168,7 +164,6 @@ def deal_msg(sock, incomingMsg):
             part = sock.recv(1024)
             while part:
                 recvF.write(part)
-                sock.sendall(b'ACK')
                 part = sock.recv(1024)
         print('file received')
 
@@ -179,7 +174,6 @@ def deal_msg(sock, incomingMsg):
             part = sock.recv(1024)
             while part:
                 recvF.write(part)
-                sock.sendall(b'ACK')
                 part = sock.recv(1024)
         print('file received')
 
